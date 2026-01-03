@@ -57,9 +57,7 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
             <div class="timer-display">
                 <!-- Row 1: Mode label -->
                 <div class="status control" on:click={toggleMode}>
-                    {#if $timer.running && ($timer.longBreakLen === 0 || $timer.mode !== 'WORK')}<span
-                            class="breath"
-                        ></span>{/if}
+                    {#if $timer.running}<span class="breath"></span>{/if}
                     <span class="mode">
                         {#if $timer.mode === 'WORK'}Work
                         {:else}Break{/if}
@@ -80,12 +78,10 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                             <span
                                 class="cycle-tomato"
                                 class:completed={$timer.mode === 'LONG_BREAK' ||
-                                    i <
-                                        $timer.cycleCount +
-                                            ($timer.mode === 'WORK' ? 1 : 0)}
-                                class:current={$timer.mode === 'WORK' &&
+                                    i < $timer.cycleCount}
+                                class:in-progress={$timer.mode === 'WORK' &&
                                     i === $timer.cycleCount &&
-                                    $timer.running}>🍅</span
+                                    $timer.inSession}>🍅</span
                             >
                         {/each}
                     </div>
@@ -308,8 +304,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     opacity: 1;
 }
 
-.cycle-tomato.current {
-    animation: blink-tomato 1s linear infinite;
+.cycle-tomato.in-progress {
+    opacity: 0.6;
 }
 
 .circle_timer {
@@ -367,16 +363,6 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     }
     50% {
         opacity: 0;
-    }
-}
-
-@keyframes blink-tomato {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.3;
     }
 }
 </style>
