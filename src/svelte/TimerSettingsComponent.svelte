@@ -20,7 +20,31 @@ const updateBreakLen = (e: Event) => {
         if (value >= 0) {
             s.breakLen = value
         }
-        target.value = s.workLen.toString()
+        target.value = s.breakLen.toString()
+        return s
+    })
+}
+
+const updateLongBreakLen = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const value = parseInt(target.value)
+    settings.update((s) => {
+        if (value >= 0) {
+            s.longBreakLen = value
+        }
+        target.value = s.longBreakLen.toString()
+        return s
+    })
+}
+
+const updateLongBreakInterval = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const value = parseInt(target.value)
+    settings.update((s) => {
+        if (value >= 1) {
+            s.longBreakInterval = value
+        }
+        target.value = s.longBreakInterval.toString()
         return s
     })
 }
@@ -46,6 +70,28 @@ const updateBreakLen = (e: Event) => {
                     value={$settings.breakLen}
                     on:change={updateBreakLen}
                     min="0"
+                    type="number"
+                />
+            </div>
+        </div>
+        <div class="pomodoro-settings-item">
+            <div class="pomodoro-settings-label">Long Break</div>
+            <div class="pomodoro-settings-control">
+                <input
+                    value={$settings.longBreakLen}
+                    on:change={updateLongBreakLen}
+                    min="0"
+                    type="number"
+                />
+            </div>
+        </div>
+        <div class="pomodoro-settings-item">
+            <div class="pomodoro-settings-label">Long Break Interval</div>
+            <div class="pomodoro-settings-control">
+                <input
+                    value={$settings.longBreakInterval}
+                    on:change={updateLongBreakInterval}
+                    min="1"
                     type="number"
                 />
             </div>

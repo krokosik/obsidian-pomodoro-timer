@@ -55,26 +55,48 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     <div class="main">
         <div class="timer">
             <div class="timer-display">
+                <!-- Row 1: Mode label -->
                 <div class="status control" on:click={toggleMode}>
-                    {#if $timer.running}<span class="breath"></span>{/if}
-                    {#if $timer.mode === 'WORK'}
-                        <span class="mode">Work</span>
-                    {:else}
-                        <span class="mode">Break</span>
-                    {/if}
-                    <span></span>
+                    {#if $timer.running && ($timer.longBreakLen === 0 || $timer.mode !== 'WORK')}<span
+                            class="breath"
+                        ></span>{/if}
+                    <span class="mode">
+                        {#if $timer.mode === 'WORK'}Work
+                        {:else}Break{/if}
+                    </span>
                 </div>
+
+                <!-- Row 2: Time display -->
                 <div on:click={toggleTimer} class="control">
                     <span class="timer-text">
                         {$timer.remained.human}
                     </span>
                 </div>
+
+                <!-- Row 3: Cycle indicator (hidden if long break disabled) -->
+                {#if $timer.longBreakLen > 0}
+                    <div class="cycle-indicator">
+                        {#each Array($timer.longBreakInterval) as _, i}
+                            <span
+                                class="cycle-tomato"
+                                class:completed={$timer.mode === 'LONG_BREAK' ||
+                                    i <
+                                        $timer.cycleCount +
+                                            ($timer.mode === 'WORK' ? 1 : 0)}
+                                class:current={$timer.mode === 'WORK' &&
+                                    i === $timer.cycleCount &&
+                                    $timer.running}>🍅</span
+                            >
+                        {/each}
+                    </div>
+                {/if}
             </div>
             <svg
                 class="timer"
                 width="160"
                 height="160"
-                xmlns="http://www.w3.org/2000/svg">
+                xmlns="http://www.w3.org/2000/svg"
+            >
                 <g>
                     <circle
                         class="circle_timer"
@@ -82,7 +104,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                         cy="81"
                         cx="81"
                         stroke-width="2"
-                        fill="none" />
+                        fill="none"
+                    />
                     <circle
                         class="circle_animation"
                         r="69.85699"
@@ -90,7 +113,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                         cx="81"
                         stroke-width="8"
                         fill="none"
-                        style="stroke-dashoffset: {strokeOffset}" />
+                        style="stroke-dashoffset: {strokeOffset}"
+                    />
                 </g>
             </svg>
         </div>
@@ -99,7 +123,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                 on:click={() => {
                     toggleExtra('tasks')
                 }}
-                class="control">
+                class="control"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -112,8 +137,11 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                     stroke-linejoin="round"
                     class="lucide lucide-list-todo"
                     ><rect x="3" y="5" width="6" height="6" rx="1" /><path
-                        d="m3 17 2 2 4-4" /><path d="M13 6h8" /><path
-                        d="M13 12h8" /><path d="M13 18h8" /></svg>
+                        d="m3 17 2 2 4-4"
+                    /><path d="M13 6h8" /><path d="M13 12h8" /><path
+                        d="M13 18h8"
+                    /></svg
+                >
             </span>
 
             {#if !$timer.running}
@@ -129,7 +157,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         class="lucide lucide-play"
-                        ><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                        ><polygon points="5 3 19 12 5 21 5 3" /></svg
+                    >
                 </span>
             {:else}
                 <span on:click={pause} class="control">
@@ -148,7 +177,9 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                             width="4"
                             height="16"
                             x="14"
-                            y="4" /></svg>
+                            y="4"
+                        /></svg
+                    >
                 </span>
             {/if}
             <span on:click={reset} class="control">
@@ -164,14 +195,16 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                     stroke-linejoin="round"
                     class="lucide lucide-rotate-ccw"
                     ><path
-                        d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path
-                        d="M3 3v5h5" /></svg>
+                        d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                    /><path d="M3 3v5h5" /></svg
+                >
             </span>
             <span
                 on:click={() => {
                     toggleExtra('settings')
                 }}
-                class="control">
+                class="control"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -186,7 +219,9 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                     ><path d="M20 7h-9" /><path d="M14 17H5" /><circle
                         cx="17"
                         cy="17"
-                        r="3" /><circle cx="7" cy="7" r="3" /></svg>
+                        r="3"
+                    /><circle cx="7" cy="7" r="3" /></svg
+                >
             </span>
         </div>
     </div>
@@ -246,8 +281,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     color: var(--pomodoro-timer-text-color);
     font-size: 1.1em;
     font-weight: bold;
-    margin-block-start: 1rem;
-    margin-block-end: 1.75rem;
+    margin-block-start: 0.5rem;
+    margin-block-end: 0.5rem;
 }
 
 .status {
@@ -258,6 +293,25 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
 .status span {
     display: inline-block;
 }
+
+.cycle-indicator {
+    display: flex;
+    gap: 0.15em;
+    font-size: 0.7rem;
+}
+
+.cycle-tomato {
+    opacity: 0.3;
+}
+
+.cycle-tomato.completed {
+    opacity: 1;
+}
+
+.cycle-tomato.current {
+    animation: blink-tomato 1s linear infinite;
+}
+
 .circle_timer {
     stroke: var(--pomodoro-timer-color);
 }
@@ -313,6 +367,16 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     }
     50% {
         opacity: 0;
+    }
+}
+
+@keyframes blink-tomato {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
     }
 }
 </style>
