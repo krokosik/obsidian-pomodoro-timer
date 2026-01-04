@@ -235,20 +235,16 @@ export default class Timer implements Readable<TimerStore> {
         } for ${state.duration} minutes.`
 
         if (this.plugin.getSettings().useSystemNotification) {
-            const Notification = (require('electron') as any).remote
-                .Notification
-            const sysNotification = new Notification({
-                title: 'Pomodoro Timer',
+            const sysNotification = new Notification('Pomodoro Timer', {
                 body: text,
                 silent: true,
             })
-            sysNotification.on('click', () => {
+            sysNotification.onclick = () => {
                 if (logFile) {
                     this.plugin.app.workspace.getLeaf('split').openFile(logFile)
                 }
                 sysNotification.close()
-            })
-            sysNotification.show()
+            }
         } else {
             let fragment = new DocumentFragment()
             let span = fragment.createEl('span')
