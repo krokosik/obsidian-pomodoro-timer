@@ -230,9 +230,8 @@ export default class Timer implements Readable<TimerStore> {
 
     private notify(state: TimerState, logFile: TFile | void) {
         const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
-        const text = `${emoji} You have been ${
-            state.mode === 'WORK' ? 'working' : 'breaking'
-        } for ${state.duration} minutes.`
+        const text = `${emoji} You have been ${state.mode === 'WORK' ? 'working' : 'breaking'
+            } for ${state.duration} minutes.`
 
         if (this.plugin.getSettings().useSystemNotification) {
             const sysNotification = new Notification('Pomodoro Timer', {
