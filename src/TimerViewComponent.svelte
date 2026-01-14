@@ -13,8 +13,7 @@ export let render: (content: string, el: HTMLElement) => void
 let extra: 'settings' | 'tasks' | 'close' = 'tasks'
 const offset = 440
 
-$: strokeOffset = $timer.remained.millis / $timer.count * offset
-
+$: strokeOffset = ($timer.remained.millis / $timer.count) * offset
 
 const start = () => {
     if (!$timer.running) {
@@ -55,23 +54,37 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     <div class="main">
         <div class="timer">
             <div class="timer-display">
-                <div
-                    class="status control"
-                    on:click={toggleMode}
-                >
+                <!-- Row 1: Mode label -->
+                <div class="status control" on:click={toggleMode}>
                     {#if $timer.running}<span class="breath"></span>{/if}
-                    {#if $timer.mode === 'WORK'}
-                        <span class="mode">Work</span>
-                    {:else}
-                        <span class="mode">Break</span>
-                    {/if}
-                    <span></span>
+                    <span class="mode">
+                        {#if $timer.mode === 'WORK'}Work
+                        {:else}Break{/if}
+                    </span>
                 </div>
+
+                <!-- Row 2: Time display -->
                 <div on:click={toggleTimer} class="control">
                     <span class="timer-text">
                         {$timer.remained.human}
                     </span>
                 </div>
+
+                <!-- Row 3: Cycle indicator (hidden if long break disabled) -->
+                {#if $timer.longBreakLen > 0}
+                    <div class="cycle-indicator">
+                        {#each Array($timer.longBreakInterval) as _, i}
+                            <span
+                                class="cycle-tomato"
+                                class:completed={$timer.mode === 'LONG_BREAK' ||
+                                    i < $timer.cycleCount}
+                                class:in-progress={$timer.mode === 'WORK' &&
+                                    i === $timer.cycleCount &&
+                                    $timer.inSession}>🍅</span
+                            >
+                        {/each}
+                    </div>
+                {/if}
             </div>
             <svg
                 class="timer"
@@ -262,8 +275,8 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
     color: var(--pomodoro-timer-text-color);
     font-size: 1.1em;
     font-weight: bold;
-    margin-block-start: 1rem;
-    margin-block-end: 1.75rem;
+    margin-block-start: 0.5rem;
+    margin-block-end: 0.5rem;
 }
 
 .status {
@@ -274,6 +287,25 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
 .status span {
     display: inline-block;
 }
+
+.cycle-indicator {
+    display: flex;
+    gap: 0.15em;
+    font-size: 0.7rem;
+}
+
+.cycle-tomato {
+    opacity: 0.3;
+}
+
+.cycle-tomato.completed {
+    opacity: 1;
+}
+
+.cycle-tomato.in-progress {
+    opacity: 0.6;
+}
+
 .circle_timer {
     stroke: var(--pomodoro-timer-color);
 }

@@ -17,6 +17,8 @@ export type TaskFormat = 'TASKS' | 'DATAVIEW'
 export interface Settings {
     workLen: number
     breakLen: number
+    longBreakLen: number
+    longBreakInterval: number
     autostart: boolean
     useStatusBarTimer: boolean
     notificationSound: boolean
@@ -38,6 +40,8 @@ export default class PomodoroSettings extends PluginSettingTab {
     static readonly DEFAULT_SETTINGS: Settings = {
         workLen: 25,
         breakLen: 5,
+        longBreakLen: 15,
+        longBreakInterval: 4,
         autostart: false,
         useStatusBarTimer: false,
         notificationSound: true,
@@ -111,15 +115,83 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
             })
 
-		new Setting(containerEl)
-			.setName('Low Animation FPS')
-			.setDesc("If you encounter high CPU usage, you can enable this option to lower the animation FPS to save CPU resources")
-			.addToggle((toggle) => {
-				toggle.setValue(this._settings.lowFps)
-				toggle.onChange((value: boolean) => {
-					this.updateSettings({ lowFps: value })
-				})
-			})
+        new Setting(containerEl)
+            .setName('Low Animation FPS')
+            .setDesc(
+                'If you encounter high CPU usage, you can enable this option to lower the animation FPS to save CPU resources',
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.lowFps)
+                toggle.onChange((value: boolean) => {
+                    this.updateSettings({ lowFps: value })
+                })
+            })
+
+        new Setting(containerEl).setHeading().setName('Timer')
+
+        new Setting(containerEl)
+            .setName('Work Duration')
+            .setDesc('Duration of work sessions in minutes')
+            .addText((text) => {
+                text.inputEl.type = 'number'
+                text.inputEl.min = '1'
+                text.inputEl.style.width = '60px'
+                text.setValue(this._settings.workLen.toString())
+                text.onChange((value) => {
+                    const num = parseInt(value)
+                    if (num >= 1) {
+                        this.updateSettings({ workLen: num })
+                    }
+                })
+            })
+
+        new Setting(containerEl)
+            .setName('Break Duration')
+            .setDesc('Duration of short breaks in minutes (0 to disable)')
+            .addText((text) => {
+                text.inputEl.type = 'number'
+                text.inputEl.min = '0'
+                text.inputEl.style.width = '60px'
+                text.setValue(this._settings.breakLen.toString())
+                text.onChange((value) => {
+                    const num = parseInt(value)
+                    if (num >= 0) {
+                        this.updateSettings({ breakLen: num })
+                    }
+                })
+            })
+
+        new Setting(containerEl)
+            .setName('Long Break Duration')
+            .setDesc('Duration of long breaks in minutes (0 to disable)')
+            .addText((text) => {
+                text.inputEl.type = 'number'
+                text.inputEl.min = '0'
+                text.inputEl.style.width = '60px'
+                text.setValue(this._settings.longBreakLen.toString())
+                text.onChange((value) => {
+                    const num = parseInt(value)
+                    if (num >= 0) {
+                        this.updateSettings({ longBreakLen: num })
+                    }
+                })
+            })
+
+        new Setting(containerEl)
+            .setName('Long Break Interval')
+            .setDesc('Number of work sessions before a long break')
+            .addText((text) => {
+                text.inputEl.type = 'number'
+                text.inputEl.min = '1'
+                text.inputEl.style.width = '60px'
+                text.setValue(this._settings.longBreakInterval.toString())
+                text.onChange((value) => {
+                    const num = parseInt(value)
+                    if (num >= 1) {
+                        this.updateSettings({ longBreakInterval: num })
+                    }
+                })
+            })
 
         new Setting(containerEl).setHeading().setName('Notification')
 
@@ -277,7 +349,6 @@ export default class PomodoroSettings extends PluginSettingTab {
                         )
                     })
                 })
-
 
             if (this._settings.logFormat == 'CUSTOM') {
                 const logTemplate = new Setting(containerEl).setName(

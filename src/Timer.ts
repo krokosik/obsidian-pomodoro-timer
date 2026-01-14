@@ -9,7 +9,7 @@ import DEFAULT_NOTIFICATION from 'Notification'
 import type { Unsubscriber } from 'svelte/motion'
 import type { TaskItem } from 'Tasks'
 
-export type Mode = 'WORK' | 'BREAK'
+export type Mode = 'WORK' | 'BREAK' | 'LONG_BREAK'
 
 export type TimerRemained = {
     millis: number
@@ -49,6 +49,9 @@ export type TimerState = {
     inSession: boolean
     workLen: number
     breakLen: number
+    longBreakLen: number
+    longBreakInterval: number
+    cycleCount: number
     count: number
     duration: number
 }
@@ -85,6 +88,9 @@ export default class Timer implements Readable<TimerStore> {
             autostart: plugin.getSettings().autostart,
             workLen: plugin.getSettings().workLen,
             breakLen: plugin.getSettings().breakLen,
+            longBreakLen: plugin.getSettings().longBreakLen,
+            longBreakInterval: plugin.getSettings().longBreakInterval,
+            cycleCount: 0,
             running: false,
             // lastTick: 0,
             mode: 'WORK',
@@ -194,7 +200,12 @@ export default class Timer implements Readable<TimerStore> {
             if (!s.inSession) {
                 // new session
                 s.elapsed = 0
-                s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
+                s.duration =
+                    s.mode === 'WORK'
+                        ? s.workLen
+                        : s.mode === 'LONG_BREAK'
+                          ? s.longBreakLen
+                          : s.breakLen
                 s.count = s.duration * 60 * 1000
                 s.startTime = now
             }
@@ -209,13 +220,31 @@ export default class Timer implements Readable<TimerStore> {
     }
 
     private endSession(state: TimerState) {
-        // setup new session
-        if (state.breakLen == 0) {
-            state.mode = 'WORK'
+        // Determine next mode based on current mode and cycle count
+        if (state.mode === 'WORK') {
+            state.cycleCount++
+            // Check if it's time for a long break
+            if (
+                state.longBreakLen > 0 &&
+                state.cycleCount >= state.longBreakInterval
+            ) {
+                state.mode = 'LONG_BREAK'
+                state.cycleCount = 0
+            } else if (state.breakLen > 0) {
+                state.mode = 'BREAK'
+            }
+            // If breakLen === 0, stay in WORK mode
         } else {
-            state.mode = state.mode == 'WORK' ? 'BREAK' : 'WORK'
+            // After any break (short or long), go back to WORK
+            state.mode = 'WORK'
         }
-        state.duration = state.mode == 'WORK' ? state.workLen : state.breakLen
+
+        state.duration =
+            state.mode === 'WORK'
+                ? state.workLen
+                : state.mode === 'LONG_BREAK'
+                  ? state.longBreakLen
+                  : state.breakLen
         state.count = state.duration * 60 * 1000
         state.inSession = false
         state.running = false
@@ -229,9 +258,19 @@ export default class Timer implements Readable<TimerStore> {
     }
 
     private notify(state: TimerState, logFile: TFile | void) {
-        const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
-        const text = `${emoji} You have been ${state.mode === 'WORK' ? 'working' : 'breaking'
-            } for ${state.duration} minutes.`
+        const emoji =
+            state.mode === 'WORK'
+                ? '🍅'
+                : state.mode === 'LONG_BREAK'
+                  ? '☕'
+                  : '🥤'
+        const modeText =
+            state.mode === 'WORK'
+                ? 'working'
+                : state.mode === 'LONG_BREAK'
+                  ? 'on a long break'
+                  : 'on a break'
+        const text = `${emoji} You have been ${modeText} for ${state.duration} minutes.`
 
         if (this.plugin.getSettings().useSystemNotification) {
             const sysNotification = new Notification('Pomodoro Timer', {
@@ -279,10 +318,15 @@ export default class Timer implements Readable<TimerStore> {
             }
 
             state.duration =
-                state.mode == 'WORK' ? state.workLen : state.breakLen
+                state.mode === 'WORK'
+                    ? state.workLen
+                    : state.mode === 'LONG_BREAK'
+                      ? state.longBreakLen
+                      : state.breakLen
             state.count = state.duration * 60 * 1000
             state.inSession = false
             state.running = false
+            state.cycleCount = 0
 
             if (!this.plugin.tracker!.pinned) {
                 this.plugin.tracker!.clear()
@@ -328,13 +372,25 @@ export default class Timer implements Readable<TimerStore> {
 
     public setupTimer() {
         this.update((state) => {
-            const { workLen, breakLen, autostart } = this.plugin.getSettings()
+            const {
+                workLen,
+                breakLen,
+                longBreakLen,
+                longBreakInterval,
+                autostart,
+            } = this.plugin.getSettings()
             state.workLen = workLen
             state.breakLen = breakLen
+            state.longBreakLen = longBreakLen
+            state.longBreakInterval = longBreakInterval
             state.autostart = autostart
             if (!state.running && !state.inSession) {
                 state.duration =
-                    state.mode == 'WORK' ? state.workLen : state.breakLen
+                    state.mode === 'WORK'
+                        ? state.workLen
+                        : state.mode === 'LONG_BREAK'
+                          ? state.longBreakLen
+                          : state.breakLen
                 state.count = state.duration * 60 * 1000
             }
 

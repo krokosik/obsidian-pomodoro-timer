@@ -14,7 +14,12 @@ const toggleTimer = () => {
 $: {
     if (statusbar && mode !== $store.mode) {
         mode = $store.mode
-        const tooltip = mode === 'WORK' ? 'Work' : 'Break'
+        const tooltip =
+            mode === 'WORK'
+                ? 'Work'
+                : mode === 'LONG_BREAK'
+                  ? 'Long Break'
+                  : 'Break'
         setTooltip(statusbar, tooltip, { delay: 300, placement: 'top' })
     }
 }
@@ -39,8 +44,9 @@ const ctxMenu = (e: MouseEvent) => {
     })
 
     menu.addItem((item) => {
-        const mode = `Switch ${$store.mode === 'WORK' ? 'Break' : 'Work'} `
-        item.setTitle(mode)
+        // Only toggle between WORK and BREAK manually
+        const nextMode = $store.mode === 'WORK' ? 'Break' : 'Work'
+        item.setTitle(`Switch ${nextMode}`)
         item.onClick(() => {
             store.toggleMode()
         })
