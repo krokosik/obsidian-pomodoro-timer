@@ -22,6 +22,9 @@ export interface Settings {
     autostart: boolean
     useStatusBarTimer: boolean
     notificationSound: boolean
+    enableReminders: boolean
+    reminderIntervals: string
+    reminderSound: string
     enableTaskTracking: boolean
     showTaskProgress: boolean
     customSound: string
@@ -45,6 +48,9 @@ export default class PomodoroSettings extends PluginSettingTab {
         autostart: false,
         useStatusBarTimer: false,
         notificationSound: true,
+        enableReminders: false,
+        reminderIntervals: '60,120,300',
+        reminderSound: '',
         customSound: '',
         showTaskProgress: true,
         enableTaskTracking: false,
@@ -228,6 +234,50 @@ export default class PomodoroSettings extends PluginSettingTab {
                     button.setTooltip('play')
                     button.onClick(() => {
                         this.plugin.timer?.playAudio()
+                    })
+                })
+        }
+
+        new Setting(containerEl).setHeading().setName('Reminders')
+
+        new Setting(containerEl)
+            .setName('Enable Reminders')
+            .setDesc(
+                'Send periodic reminders after a session ends if autostart is disabled',
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.enableReminders)
+                toggle.onChange((value) => {
+                    this.updateSettings({ enableReminders: value }, true)
+                })
+            })
+
+        if (this._settings.enableReminders) {
+            new Setting(containerEl)
+                .setName('Reminder Intervals')
+                .setDesc(
+                    'Comma-separated seconds after session ends (e.g., 60,120,300)',
+                )
+                .addText((text) => {
+                    text.inputEl.style.width = '150px'
+                    text.setPlaceholder('60,120,300')
+                    text.setValue(this._settings.reminderIntervals)
+                    text.onChange((value) => {
+                        this.updateSettings({ reminderIntervals: value })
+                    })
+                })
+
+            new Setting(containerEl)
+                .setName('Reminder Sound')
+                .setDesc(
+                    'Custom sound for reminders (leave empty to use notification sound)',
+                )
+                .addText((text) => {
+                    text.inputEl.style.width = '100%'
+                    text.setPlaceholder('path/to/reminder.mp3')
+                    text.setValue(this._settings.reminderSound)
+                    text.onChange((value) => {
+                        this.updateSettings({ reminderSound: value })
                     })
                 })
         }

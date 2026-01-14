@@ -78,6 +78,8 @@ export default class Timer implements Readable<TimerStore> {
 
     private unsubscribers: Unsubscriber[] = []
 
+    private reminderTimeouts: ReturnType<typeof setTimeout>[] = []
+
     public subscribe
 
     constructor(plugin: PomodoroTimerPlugin) {
@@ -169,6 +171,8 @@ export default class Timer implements Readable<TimerStore> {
         })
         if (autostart) {
             this.start()
+        } else {
+            this.scheduleReminders()
         }
     }
 
@@ -195,6 +199,7 @@ export default class Timer implements Readable<TimerStore> {
     }
 
     public start() {
+        this.clearReminders()
         this.update((s) => {
             let now = new Date().getTime()
             if (!s.inSession) {
@@ -312,6 +317,7 @@ export default class Timer implements Readable<TimerStore> {
     }
 
     public reset() {
+        this.clearReminders()
         this.update((state) => {
             if (state.elapsed > 0) {
                 this.logger.log(this.createLogContext(state))
@@ -370,6 +376,79 @@ export default class Timer implements Readable<TimerStore> {
         audio.play()
     }
 
+    public playReminderAudio() {
+        let audio = Timer.DEFAULT_NOTIFICATION_AUDIO
+        const settings = this.plugin.getSettings()
+        const soundPath = settings.reminderSound || settings.customSound
+        if (soundPath) {
+            const soundFile =
+                this.plugin.app.vault.getAbstractFileByPath(soundPath)
+            if (soundFile && soundFile instanceof TFile) {
+                const soundSrc =
+                    this.plugin.app.vault.getResourcePath(soundFile)
+                audio = new Audio(soundSrc)
+            }
+        }
+        audio.play()
+    }
+
+    private parseReminderIntervals(): number[] {
+        const input = this.plugin.getSettings().reminderIntervals
+        return input
+            .split(',')
+            .map((s) => parseInt(s.trim()))
+            .filter((n) => !isNaN(n) && n > 0)
+            .sort((a, b) => a - b)
+    }
+
+    private scheduleReminders() {
+        this.clearReminders()
+
+        const settings = this.plugin.getSettings()
+        if (!settings.enableReminders || settings.autostart) {
+            return
+        }
+
+        const intervals = this.parseReminderIntervals()
+        for (const seconds of intervals) {
+            const timeout = setTimeout(() => {
+                this.sendReminder()
+            }, seconds * 1000)
+            this.reminderTimeouts.push(timeout)
+        }
+    }
+
+    private clearReminders() {
+        for (const timeout of this.reminderTimeouts) {
+            clearTimeout(timeout)
+        }
+        this.reminderTimeouts = []
+    }
+
+    private sendReminder() {
+        const text = '🍅 Ready to start your next session?'
+
+        if (this.plugin.getSettings().useSystemNotification) {
+            const Notification = (require('electron') as any).remote
+                .Notification
+            const sysNotification = new Notification({
+                title: 'Pomodoro Timer',
+                body: text,
+                silent: true,
+            })
+            sysNotification.on('click', () => {
+                sysNotification.close()
+            })
+            sysNotification.show()
+        } else {
+            new Notice(text)
+        }
+
+        if (this.plugin.getSettings().notificationSound) {
+            this.playReminderAudio()
+        }
+    }
+
     public setupTimer() {
         this.update((state) => {
             const {
@@ -400,6 +479,7 @@ export default class Timer implements Readable<TimerStore> {
 
     public destroy() {
         this.pause()
+        this.clearReminders()
         this.clock?.terminate()
         for (let unsub of this.unsubscribers) {
             unsub()
